@@ -3,7 +3,7 @@ This bot authorizes users when they react with specific emoji, and posts the Tre
 
 # REQUIREMENTS
 
-Discord API already set up
+Discord API already set up, and a server with private channels that require an 'authorized' role to see, that role can have any name, you just need the roleID from that role to unlock access to all the private channels.
 
 # INSTRUCTIONS
 
