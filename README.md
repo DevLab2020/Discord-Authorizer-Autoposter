@@ -11,7 +11,7 @@ Run command: npm -i
 
 Edit config.json with your BOT_TOKEN
 
-edit RID, guildID, and channelID in .env file
+edit RID, guildID, tagDir <--(first 3 required for now), messageID, and channelID in .env file
 
 
 
