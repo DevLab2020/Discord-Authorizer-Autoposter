@@ -63,21 +63,23 @@ function newTechPost(){
 	nextPost();
 }
 
-// Check if the article has already been posted
+// Check if the post has already been posted
 function checkIfPosted(obj){
-	let jsonCheck = fs.readFileSync(tagDir+'alreadyPosted.json');
-	postPosted = JSON.parse(jsonCheck);
-	for(var i=0;i<postPosted.length;i++){
-		//borked (broken)
-		if(postPosted[i].URL=obj.URL){
-			//advance the index so it tries a different article next time around
-			nextPost();
-			console.log('already posted..skipping!');
-			return true;
-		}else{
-			return false;
-		}
-	}
+        let checkerVar = false;
+        let jsonCheck = fs.readFileSync(tagDir+'alreadyPosted.json');
+        postPosted = JSON.parse(jsonCheck);
+        //compare every URL in alreadyPosted with obj.url
+        for(var i=0;i<postPosted.length;i++){
+                if(postPosted[i].URL===obj.URL){
+                        checkerVar = true;
+                }
+        }
+        if(checkerVar === true){
+                nextPost();
+                return true;
+        }else{
+                return false;
+        }
 }
 
 // Main post function
