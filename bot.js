@@ -1,3 +1,4 @@
+require('dotenv').config();
 const Discord = require("discord.js");
 const config = require("./config.json");
 const schedule = require('node-schedule');
@@ -6,20 +7,21 @@ const client = new Discord.Client({
 	partials: ["MESSAGE","CHANNEL", "REACTION"],
 	intents: ["GUILDS", "GUILD_MESSAGES","GUILD_MESSAGE_REACTIONS"]
 });
+//command prefix, change for your bot to react to different message prefixes. !command ~command /command
 const prefix = "/";
-//role id
-const RID = "";
-const channelID = "";
-const guildID = "";
-//Trending Article Grabber directory prefix
-// example "/home/username/bots/tagbot/" important: trailing /
-const tagDir = "";
+//load unique IDs from environment file
+const roleID = process.env.roleID;
+const messageID = process.env.messageID;
+const channelID = process.env.channelID;
+const guildID = process.env.guildID;
+const tagDir = process.env.tagDir;
 postNum = 0;
-//subreddit list, MAX 3
+//subreddit list, must be 3
 subList = ['technology', 'tech', 'futurology'];
 subNum = 0;
 sub = subList[subNum];
 
+// Initialize the bot
 client.once('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`);
 //      post every minute debugger	
@@ -36,29 +38,40 @@ client.once('ready', () => {
 	});
 });
 
+//advance the json index for next pull
+function nextPost(){
+if(postNum < 2){
+                postNum += 1;
+        }
+        else{
+                postNum = 0;
+                if(subNum < 2){
+                        subNum +=1;
+                }else{
+                        subNum = 0;
+                }
+                sub = subList[subNum];
+        }
+}
+
+//new article post initializer
 function newTechPost(){
 	const guild = client.guilds.cache.get(guildID);
 	const channel = client.channels.cache.get(channelID);
+	//console.log(subNum);
 	getAndReply(postNum, guild, channel, sub);
-	if(postNum < 2){
-		postNum += 1;
-	}
-	else{
-		postNum = 0;
-		if(subNum < 2){
-			subNum +=1;
-		}else{
-			subNum = 0;
-		}
-		sub = subList[subNum];
-	}
+	nextPost();
 }
 
+// Check if the article has already been posted
 function checkIfPosted(obj){
 	let jsonCheck = fs.readFileSync(tagDir+'alreadyPosted.json');
 	postPosted = JSON.parse(jsonCheck);
 	for(var i=0;i<postPosted.length;i++){
+		//borked (broken)
 		if(postPosted[i].URL=obj.URL){
+			//advance the index so it tries a different article next time around
+			nextPost();
 			console.log('already posted..skipping!');
 			return true;
 		}else{
@@ -67,6 +80,7 @@ function checkIfPosted(obj){
 	}
 }
 
+// Main post function
 function getAndReply(postNum, guild, channel, sub){
         fs.readFile(tagDir+'datadump-'+sub+'.json', 'utf8', function(err, data){
                 json = JSON.parse(data);
@@ -74,16 +88,12 @@ function getAndReply(postNum, guild, channel, sub){
                         let obj = json[i];
 			var hasBeenPosted = checkIfPosted(obj);
 			if(hasBeenPosted === true){
-        //if return is true, data is not new, exit function
 				break;
 			}
-      //post new data
-      let msgText = obj.text.toString()+"\n";
-      let msgLink = obj.link.toString()+"\n";
-      let redditUrl = "<https://reddit.com/"+obj.URL.toString()+">\n";
+                        let msgText = obj.text.toString()+"\n";
+                        let msgLink = obj.link.toString()+"\n";
+                        let redditUrl = "<https://reddit.com/"+obj.URL.toString()+">\n";
 			channel.send(msgText+msgLink+redditUrl);
-      console.log(posting article!);
-      //open alreadyPosted, append new data and write to file
 			let jsonImport = fs.readFileSync(tagDir+'alreadyPosted.json');
 			newData = JSON.parse(jsonImport);
 			newData.push(obj);
@@ -93,28 +103,12 @@ function getAndReply(postNum, guild, channel, sub){
 	});
 }
 
+// reaction event capture initializer
 const events = {
-    MESSAGE_REACTION_ADD: 'messageReactionAdd',
+	MESSAGE_REACTION_ADD: 'messageReactionAdd',
 };
 
-client.on('messageReactionRemove', async (reaction, user) => {
-	if (reaction.message.partial) {
-		try {
-			await reaction.message.fetch();
-		} catch (error) {
-			console.error('Something went wrong when fetching the message: ', error);
-		}
-	}
-
-	console.log(`${user.username} removed their "${reaction.emoji.name}" reaction.`);
-  //the only way i found this to work is to copy and paste the emoji /shrug
-  //remove role if emoji remove
-	if (reaction.emoji.name ==='💻'){
-		const guild = client.guilds.cache.get(guildID);
-		guild.members.fetch(user.id).then(guildmember => guildmember.roles.remove(roleID));
-	}
-});
-
+// Function when a client adds the reaction
 client.on('messageReactionAdd', async (reaction, user) => {
 	if (reaction.message.partial) {
 		try {
@@ -125,14 +119,16 @@ client.on('messageReactionAdd', async (reaction, user) => {
 	}
 
 	console.log(`${user.username} reacted with "${reaction.emoji.name}".`);
-//the only way i found this to work is to copy and paste the emoji /shrug
-//add role if emoji
+// The only working method I found to match was to copy and paste the emoji
 	if (reaction.emoji.name ==='💻'){
 		const guild = client.guilds.cache.get(guildID);
 		guild.members.fetch(user.id).then(guildmember => guildmember.roles.add(roleID));
 	}
+
 });
-//autoposter
+
+// Capture messages
+// Custom bot commands
 client.on("messageCreate", function(message) {
 	if (message.author.client) return;
 	if (!message.content.startsWith(prefix)) return;
@@ -145,6 +141,7 @@ client.on("messageCreate", function(message) {
 		const timeTaken = Date.now() - message.createdTimestamp;
 		message.reply(`Pong! This message had a latency of ${timeTaken}ms.`);
 	}
+
 	else if (command === "sum") {
 		const numArgs = args.map(x => parseFloat(x));
 		const sum = numArgs.reduce((counter, x) => counter += x);
@@ -152,10 +149,11 @@ client.on("messageCreate", function(message) {
 	}
 
 	else if (command === "help"){
-		message.reply("This will be a help menu, type "+prefix+"commands for a list of commands.")}
+		message.reply("This will be a help menu, type /commands for a list of commands.")}
 	else if (command === "commands"){
 		message.reply("commands:"+"\n"+"/ping"+"\n"+"/sum");
 	}
 
 });
+
 client.login(config.BOT_TOKEN);
