@@ -11,8 +11,9 @@ Run command: npm -i
 
 Edit config.json with your BOT_TOKEN
 
-edit RID, guildID, tagDir <--(first 3 required for now), messageID, and channelID in .env file
+edit RID, guildID, tagDir, messageID, and channelID in .env file
 
+for this current version, you can delete messageID, channelID in .env but you must delete const in main js file as well.
 
 
 more info and instructions coming soon!
